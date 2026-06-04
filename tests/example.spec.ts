@@ -5,13 +5,13 @@ test('Version 1 - LoadVersion1 purchase flow', async ({ page }) => {
   await page.goto('https://joebau.github.io/reflect-ai-demo/');
 
   // Click Shop (Version 1 UI)
-  await page.getByRole('link', { name: 'Shop' }).click();
+  await page.getByRole('link', { name: 'Buy' }).click();
 
   // Enter email
   await page.getByPlaceholder('Enter email').fill('test@test.com');
 
   // Click Continue (Version 1 UI)
-  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('button', { name: 'Next' }).click();
 
   // Verify success message
   await expect(
