@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reflect AI UI Change Demo</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 40px;
+}
+
+.container {
+    max-width: 700px;
+}
+
+nav {
+    margin-bottom: 30px;
+}
+
+nav a {
+    margin-right: 20px;
+    text-decoration: none;
+    color: blue;
+    font-weight: bold;
+}
+
+.card {
+    border: 1px solid #ddd;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+button {
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+.controls {
+    margin-bottom: 20px;
+}
+
+.version {
+    padding: 10px;
+    background: #f3f3f3;
+    margin-bottom: 20px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="controls">
+        <button onclick="loadVersion1()">Load Version 1</button>
+        <button onclick="loadVersion2()">Load Version 2</button>
+        <button onclick="loadVersion3()">Load Version 3</button>
+        <button onclick="loadVersion4()">Load Version 4</button>
+    </div>
+
+    <div class="version" id="versionLabel">
+        Current Version: Version 1
+    </div>
+
+    <div id="app"></div>
+
+</div>
+
+<script>
+
+function purchaseAction() {
+    document.getElementById("result").innerHTML =
+        "Purchase workflow started.";
+}
+
+function loadVersion1() {
+
+    document.getElementById("versionLabel").innerText =
+        "Current Version: Version 1 (Baseline)";
+
+    document.getElementById("app").innerHTML = `
+        <nav>
+            <a href="#" id="shopMenu">Shop</a>
+            <a href="#">About</a>
+        </nav>
+
+        <div class="card">
+            <h2>Checkout</h2>
+
+            <input
+                id="email"
+                type="email"
+                placeholder="Enter Email">
+
+            <br><br>
+
+            <button
+                id="continueBtn"
+                onclick="purchaseAction()">
+                Continue
+            </button>
+
+            <p id="result"></p>
+        </div>
+    `;
+}
+
+function loadVersion2() {
+
+    document.getElementById("versionLabel").innerText =
+        "Current Version: Version 2 (Text Changed)";
+
+    document.getElementById("app").innerHTML = `
+        <nav>
+            <a href="#" id="shopMenu">Buy</a>
+            <a href="#">About</a>
+        </nav>
+
+        <div class="card">
+            <h2>Checkout</h2>
+
+            <input
+                id="email"
+                type="email"
+                placeholder="Enter Email">
+
+            <br><br>
+
+            <button
+                id="continueBtn"
+                onclick="purchaseAction()">
+                Next
+            </button>
+
+            <p id="result"></p>
+        </div>
+    `;
+}
+
+function loadVersion3() {
+
+    document.getElementById("versionLabel").innerText =
+        "Current Version: Version 3 (IDs Changed)";
+
+    document.getElementById("app").innerHTML = `
+        <nav>
+            <a href="#" id="buyMenuNew">Buy</a>
+            <a href="#">About</a>
+        </nav>
+
+        <div class="card">
+            <h2>Checkout</h2>
+
+            <input
+                id="customerEmail"
+                type="email"
+                placeholder="Email Address">
+
+            <br><br>
+
+            <button
+                id="nextButtonNew"
+                onclick="purchaseAction()">
+                Next
+            </button>
+
+            <p id="result"></p>
+        </div>
+    `;
+}
+
+function loadVersion4() {
+
+    document.getElementById("versionLabel").innerText =
+        "Current Version: Version 4 (Workflow Changed)";
+
+    document.getElementById("app").innerHTML = `
+        <nav>
+            <a href="#" id="purchaseCenter">
+                Purchase Center
+            </a>
+        </nav>
+
+        <div class="card">
+            <h2>Checkout</h2>
+
+            <button onclick="alert('Draft Saved')">
+                Save Draft
+            </button>
+
+            <button onclick="alert('Review Order')">
+                Review Order
+            </button>
+
+            <button onclick="purchaseAction()">
+                Proceed To Payment
+            </button>
+
+            <p id="result"></p>
+        </div>
+    `;
+}
+
+loadVersion1();
+
+</script>
+
+</body>
+</html>
