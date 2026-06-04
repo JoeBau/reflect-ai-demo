@@ -1,18 +1,20 @@
 import { test, expect } from '@playwright/test';
 
-test('has title', async ({ page }) => {
-  await page.goto('https://playwright.dev/');
+test('Version 1 - LoadVersion1 purchase flow', async ({ page }) => {
+  // Open your app
+  await page.goto('https://joebau.github.io/reflect-ai-demo/');
 
-  // Expect a title "to contain" a substring.
-  await expect(page).toHaveTitle(/Playwright/);
-});
+  // Click Shop (Version 1 UI)
+  await page.getByRole('link', { name: 'Shop' }).click();
 
-test('get started link', async ({ page }) => {
-  await page.goto('https://playwright.dev/');
+  // Enter email
+  await page.getByPlaceholder('Enter email').fill('test@test.com');
 
-  // Click the get started link.
-  await page.getByRole('link', { name: 'Get started' }).click();
+  // Click Continue (Version 1 UI)
+  await page.getByRole('button', { name: 'Continue' }).click();
 
-  // Expects page to have a heading with the name of Installation.
-  await expect(page.getByRole('heading', { name: 'Installation' })).toBeVisible();
+  // Verify success message
+  await expect(
+    page.getByText('Purchase workflow started')
+  ).toBeVisible();
 });
