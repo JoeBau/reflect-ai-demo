@@ -9,7 +9,7 @@ on:
 jobs:
   self-heal:
     runs-on: ubuntu-latest
-    
+
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -43,7 +43,7 @@ jobs:
 
       - name: Commit and push fixes
         if: env.TEST_FAILED == 'true'
-         env:
+        env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "ai-bot"
