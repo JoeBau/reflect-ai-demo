@@ -80,7 +80,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "failed",
-                  "duration": 10811,
+                  "duration": 10898,
                   "error": {
                     "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: 'Buy' })\u001b[22m\n",
                     "stack": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: 'Buy' })\u001b[22m\n\n    at C:\\Users\\T808209\\Documents\\reflect-ai-demo-backup\\tests\\example.spec.ts:8:49",
@@ -104,7 +104,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-06-05T02:03:13.537Z",
+                  "startTime": "2026-06-05T02:37:59.683Z",
                   "annotations": [],
                   "attachments": [
                     {
@@ -148,8 +148,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-06-05T02:03:12.972Z",
-    "duration": 12941.710000000001,
+    "startTime": "2026-06-05T02:37:59.181Z",
+    "duration": 12963.307999999999,
     "expected": 0,
     "skipped": 0,
     "unexpected": 1,

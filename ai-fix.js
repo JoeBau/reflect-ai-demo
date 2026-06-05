@@ -1,23 +1,27 @@
 const fs = require("fs");
 const { execSync } = require("child_process");
+const { sanitizeForAI } = require("./sandbox");
 
 const API_URL = "https://api.fuelix.ai/v1/chat/completions";
 const API_KEY = process.env.FUELIX_API_KEY;
 
 async function run() {
-  let output = "";
+  let rawOutput = "";
 
-  // 1. Run Playwright tests
+  // 1. Run Playwright safely
   try {
-    output = execSync("npx playwright test", { encoding: "utf-8" });
+    rawOutput = execSync("npx playwright test", { encoding: "utf-8" });
   } catch (err) {
-    output = err.stdout?.toString() || err.message;
+    rawOutput = err.stdout?.toString() || err.message;
   }
 
-  console.log("\n=== PLAYWRIGHT OUTPUT ===\n");
-  console.log(output);
+  console.log("\n=== RAW PLAYWRIGHT OUTPUT ===\n");
+  console.log(rawOutput);
 
-  // 2. Ask AI for structured fix (NO DIFFS)
+  // 2. SANDBOX (security layer)
+  const safeOutput = sanitizeForAI(rawOutput);
+
+  // 3. Call AI
   const payload = {
     model: "claude-sonnet-4-6",
     messages: [
@@ -26,28 +30,26 @@ async function run() {
         content: `
 You are a QA self-healing engine.
 
-Analyze the Playwright failure and return ONLY valid JSON.
+Return ONLY raw JSON. No markdown. No backticks.
 
-STRICT FORMAT:
-
+Format:
 {
   "file": "tests/example.spec.ts",
   "replacements": [
     {
-      "find": "old text or selector",
-      "replace": "new text or selector"
+      "find": "old text",
+      "replace": "new text"
     }
   ]
 }
 
-RULES:
-- Output ONLY JSON
-- No markdown
-- No explanation
+Rules:
+- Output must be valid JSON
+- No explanations
 - No extra text
 
-FAILURE:
-${output}
+Failure log:
+${safeOutput}
 `
       }
     ]
@@ -64,30 +66,41 @@ ${output}
 
   const data = await res.json();
 
-  // 3. Extract AI response
+  // 4. Extract raw AI output
   let raw = data?.choices?.[0]?.message?.content || "";
 
   console.log("\n=== RAW AI OUTPUT ===\n");
   console.log(raw);
 
-  // 4. Parse JSON safely
+  // 5. CLEAN markdown artifacts (IMPORTANT FIX)
+  raw = raw
+    .replace(/```json/g, "")
+    .replace(/```/g, "")
+    .trim();
+
+  console.log("\n=== CLEANED AI OUTPUT ===\n");
+  console.log(raw);
+
+  // 6. Parse JSON safely
   let result;
+
   try {
     result = JSON.parse(raw);
   } catch (e) {
-    console.log("\n❌ AI did not return valid JSON. Aborting.");
+    console.log("\n❌ JSON parse failed — skipping run");
+    console.log(raw);
+    return;
+  }
+
+  // 7. Validate structure
+  if (!result.file || !Array.isArray(result.replacements)) {
+    console.log("\n❌ Invalid AI structure — aborting");
     return;
   }
 
   console.log("\n=== PARSED RESULT ===\n", result);
 
-  // 5. Validate structure
-  if (!result.file || !result.replacements) {
-    console.log("\n❌ Invalid AI structure. Aborting.");
-    return;
-  }
-
-  // 6. Apply changes deterministically
+  // 8. Apply changes safely
   let filePath = result.file;
   let fileContent = fs.readFileSync(filePath, "utf-8");
 
@@ -103,34 +116,31 @@ ${output}
   }
 
   fs.writeFileSync(filePath, fileContent);
-  console.log("\n✔ File updated safely (no git diff needed)");
+  console.log("\n✔ File updated safely");
+
+  // 9. Git automation (safe branch handling)
+  const branchName = "ai-fix/run-1";
 
   try {
-    // 7. Git automation
-    const branchName = "ai-fix/run-1";
-
     try {
-    // check if branch exists locally
-    execSync(`git rev-parse --verify ${branchName}`, { stdio: "ignore" });
-
-    console.log(`Branch ${branchName} exists, switching...`);
-    execSync(`git checkout ${branchName}`, { stdio: "inherit" });
-
-    } catch (e) {
-    console.log(`Creating new branch: ${branchName}`);
-    execSync(`git checkout -b ${branchName}`, { stdio: "inherit" });
+      execSync(`git rev-parse --verify ${branchName}`, { stdio: "ignore" });
+      execSync(`git checkout ${branchName}`, { stdio: "inherit" });
+    } catch {
+      execSync(`git checkout -b ${branchName}`, { stdio: "inherit" });
     }
 
     execSync("git add .", { stdio: "inherit" });
-    execSync('git commit -m "AI self-heal: Playwright fix (v2)"', {
+    execSync('git commit -m "AI self-heal fix (v3)"', {
       stdio: "inherit",
     });
 
-    execSync("git push -u origin ai-fix/run-1", { stdio: "inherit" });
+    execSync(`git push -u origin ${branchName}`, { stdio: "inherit" });
 
     console.log("\n🚀 AI self-healing completed");
-    console.log("👉 PR:");
-    console.log("https://github.com/JoeBau/reflect-ai-demo/pull/new/ai-fix/run-1");
+    console.log(
+      "👉 PR:",
+      `https://github.com/JoeBau/reflect-ai-demo/pull/new/${branchName}`
+    );
 
   } catch (e) {
     console.log("\n⚠ Git error:", e.message);
