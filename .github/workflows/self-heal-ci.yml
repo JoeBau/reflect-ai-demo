@@ -95,18 +95,28 @@ jobs:
           git config user.name "ai-bot"
           git config user.email "ai-bot@users.noreply.github.com"
 
+          # HARD LOCK: only allow this branch
           BRANCH="ai-fix"
+
+          # Safety check: prevent accidental nested branches
+          if [[ "$BRANCH" == *"/"* ]]; then
+            echo "ERROR: Nested branch names are forbidden"
+            exit 1
+          fi
 
           echo "BRANCH_NAME=$BRANCH" >> $GITHUB_ENV
 
-          git checkout -b $BRANCH || git checkout $BRANCH
+          git fetch origin
+
+          git checkout $BRANCH || git checkout -b $BRANCH
 
           git add .
 
-          git diff --quiet && echo "No changes" && exit 0
+          git diff --cached --quiet && echo "No changes" && exit 0
+
           git commit -m "AI self-heal CI fix"
 
-          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git $BRANCH
+          git push -u origin $BRANCH
 
       - name: Verify GitHub CLI
         run: gh --version
