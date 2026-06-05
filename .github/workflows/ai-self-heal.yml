@@ -12,16 +12,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repository (clean)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           clean: true
 
-      - name: Clean git ref state
-        run: |
-          git fetch --prune origin
-          git update-ref -d refs/heads/ai-fix/run-1 2>/dev/null || true
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -46,10 +42,6 @@ jobs:
 
           git fetch origin --prune
 
-          # HARD RESET local state
-          git branch -D ai-fix 2>/dev/null || true
-
-          # FORCE single-branch model
           git checkout -B ai-fix
 
           git add .
@@ -58,5 +50,4 @@ jobs:
 
           git commit -m "AI self-heal fix" || exit 0
 
-          # IMPORTANT: no force push
           git push origin ai-fix
