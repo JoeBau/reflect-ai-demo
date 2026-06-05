@@ -1,4 +1,4 @@
-name: AI Self-Healing CI
+name: AI Self-Healing Engine (Dispatcher)
 
 on:
   repository_dispatch:
@@ -16,7 +16,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          clean: true
 
+      - name: Clean git ref state
+        run: |
+          git fetch --prune origin
+          git update-ref -d refs/heads/ai-fix/run-1 2>/dev/null || true
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -35,12 +40,23 @@ jobs:
 
       - name: Commit and push fixes
         run: |
+
           git config user.name "ai-bot"
           git config user.email "ai-bot@users.noreply.github.com"
 
-          git checkout ai-fix || git checkout -b ai-fix
+          git fetch origin --prune
+
+          # HARD RESET local state
+          git branch -D ai-fix 2>/dev/null || true
+
+          # FORCE single-branch model
+          git checkout -B ai-fix
 
           git add .
-          git commit -m "AI self-heal fix" || echo "No changes"
 
+          git diff --cached --quiet && echo "No changes" && exit 0
+
+          git commit -m "AI self-heal fix" || exit 0
+
+          # IMPORTANT: no force push
           git push origin ai-fix

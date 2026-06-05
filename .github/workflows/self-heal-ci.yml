@@ -1,4 +1,4 @@
-name: AI Self-Healing CI
+name: Playwright CI (Test Runner)
 
 on:
   push:
