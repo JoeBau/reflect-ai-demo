@@ -4,33 +4,51 @@ const { execSync } = require("child_process");
 const API_URL = "https://api.fuelix.ai/v1/chat/completions";
 const API_KEY = process.env.FUELIX_API_KEY;
 
-// Run everything inside async function
 async function run() {
-  let output;
+  let output = "";
 
+  // 1. Run Playwright tests
   try {
     output = execSync("npx playwright test", { encoding: "utf-8" });
   } catch (err) {
     output = err.stdout?.toString() || err.message;
   }
 
-  console.log("=== PLAYWRIGHT OUTPUT ===");
+  console.log("\n=== PLAYWRIGHT OUTPUT ===\n");
   console.log(output);
 
+  // 2. Ask AI for structured fix (NO DIFFS)
   const payload = {
     model: "claude-sonnet-4-6",
     messages: [
       {
         role: "user",
         content: `
-You are a QA self-healing agent.
+You are a QA self-healing engine.
 
-Fix this Playwright failure:
+Analyze the Playwright failure and return ONLY valid JSON.
 
+STRICT FORMAT:
+
+{
+  "file": "tests/example.spec.ts",
+  "replacements": [
+    {
+      "find": "old text or selector",
+      "replace": "new text or selector"
+    }
+  ]
+}
+
+RULES:
+- Output ONLY JSON
+- No markdown
+- No explanation
+- No extra text
+
+FAILURE:
 ${output}
-
-Return ONLY a git diff for tests/example.spec.ts.
-        `
+`
       }
     ]
   };
@@ -46,46 +64,77 @@ Return ONLY a git diff for tests/example.spec.ts.
 
   const data = await res.json();
 
-  console.log("=== AI RESPONSE ===");
-  console.log(data);
+  // 3. Extract AI response
+  let raw = data?.choices?.[0]?.message?.content || "";
 
-  fs.writeFileSync(
-    "fix.patch",
-    data.choices?.[0]?.message?.content || ""
-  );
+  console.log("\n=== RAW AI OUTPUT ===\n");
+  console.log(raw);
 
-  console.log("Patch saved to fix.patch");
+  // 4. Parse JSON safely
+  let result;
+  try {
+    result = JSON.parse(raw);
+  } catch (e) {
+    console.log("\n❌ AI did not return valid JSON. Aborting.");
+    return;
+  }
 
-    const { execSync } = require("child_process");
-    // Apply Patch
+  console.log("\n=== PARSED RESULT ===\n", result);
+
+  // 5. Validate structure
+  if (!result.file || !result.replacements) {
+    console.log("\n❌ Invalid AI structure. Aborting.");
+    return;
+  }
+
+  // 6. Apply changes deterministically
+  let filePath = result.file;
+  let fileContent = fs.readFileSync(filePath, "utf-8");
+
+  for (const r of result.replacements) {
+    if (!r.find || !r.replace) continue;
+
+    console.log(`Applying: ${r.find} → ${r.replace}`);
+
+    fileContent = fileContent.replace(
+      new RegExp(r.find, "g"),
+      r.replace
+    );
+  }
+
+  fs.writeFileSync(filePath, fileContent);
+  console.log("\n✔ File updated safely (no git diff needed)");
+
+  try {
+    // 7. Git automation
+    const branchName = "ai-fix/run-1";
+
     try {
-    execSync("git apply fix.patch", { stdio: "inherit" });
-    console.log("Patch applied successfully");
+    // check if branch exists locally
+    execSync(`git rev-parse --verify ${branchName}`, { stdio: "ignore" });
+
+    console.log(`Branch ${branchName} exists, switching...`);
+    execSync(`git checkout ${branchName}`, { stdio: "inherit" });
+
     } catch (e) {
-    console.log("Patch apply failed:", e.message);
+    console.log(`Creating new branch: ${branchName}`);
+    execSync(`git checkout -b ${branchName}`, { stdio: "inherit" });
     }
-    // git branch
-    try {
-    execSync("git checkout -b ai-fix/run-1", { stdio: "inherit" });
-    } catch (e) {
-    console.log("Branch already exists or error:", e.message);
-    }
-    // Commit
-    try {
+
     execSync("git add .", { stdio: "inherit" });
-    execSync('git commit -m "AI self-heal: Playwright fix"', { stdio: "inherit" });
-    } catch (e) {
-    console.log("Commit skipped:", e.message);
-    }
-    // Push
-    try {
+    execSync('git commit -m "AI self-heal: Playwright fix (v2)"', {
+      stdio: "inherit",
+    });
+
     execSync("git push -u origin ai-fix/run-1", { stdio: "inherit" });
-    } catch (e) {
-    console.log("Push failed:", e.message);
-    }
 
+    console.log("\n🚀 AI self-healing completed");
+    console.log("👉 PR:");
+    console.log("https://github.com/JoeBau/reflect-ai-demo/pull/new/ai-fix/run-1");
 
-
+  } catch (e) {
+    console.log("\n⚠ Git error:", e.message);
+  }
 }
 
 run();

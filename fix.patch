@@ -1,37 +1,12 @@
-Looking at the error "Cannot access 'execSync' before initialization", this is a classic JavaScript temporal dead zone (TDZ) error, which occurs when a `const` or `let` variable is used before its declaration, often due to hoisting issues or circular references.
-
-The most common cause in Playwright/TypeScript test files is using `execSync` from `child_process` before it's properly imported, or having the import statement placed after its usage due to some restructuring.
-
-Here's the fix:
-
-```diff
+diff --git a/tests/example.spec.ts b/tests/example.spec.ts
+index 1234567..abcdefg 100644
 --- a/tests/example.spec.ts
 +++ b/tests/example.spec.ts
-@@ -1,8 +1,8 @@
-+import { execSync } from 'child_process';
- import { test, expect } from '@playwright/test';
--import { execSync } from 'child_process';
+@@ -5,7 +5,7 @@ test('Version 1 - LoadVersion1 purchase flow', async ({ page }) => {
  
- test('example test', async ({ page }) => {
-   await page.goto('https://example.com');
-   await expect(page).toHaveTitle(/Example/);
- });
-```
-
-If the file structure is different, here's the more general fix that ensures `execSync` is imported at the top before any other imports that might trigger its use:
-
-```diff
---- a/tests/example.spec.ts
-+++ b/tests/example.spec.ts
-@@ -1,5 +1,5 @@
-+import { execSync } from 'child_process';
- import { test, expect } from '@playwright/test';
--import { execSync } from 'child_process';
+   // Click Shop (Version 1 UI)
+-  await page.getByRole('link', { name: 'Buy' }).click();
++  await page.getByRole('link', { name: 'Shop' }).click();
  
- test('example test', async ({ page }) => {
-   await page.goto('https://example.com');
-   await expect(page).toHaveTitle(/Example/);
- });
-```
-
-The key fix is moving `import { execSync } from 'child_process'` to be the **first import** in the file, before any other imports that may indirectly reference or trigger code that uses `execSync`. This resolves the temporal dead zone error by ensuring the binding is initialized before any code that depends on it runs.
+   // Enter email
+   await page.getByPlaceholder('Enter email').fill('test@test.com');
