@@ -1,0 +1,55 @@
+name: AI Self-Healing CI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  self-heal:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright tests
+        id: test
+        run: |
+          npx playwright test || echo "TEST_FAILED=true" >> $GITHUB_ENV
+
+      - name: Run AI Self-Heal Agent
+        if: env.TEST_FAILED == 'true'
+        env:
+          FUELIX_API_KEY: ${{ secrets.FUELIX_API_KEY }}
+        run: node ai-fix.js
+
+      - name: Commit and push fixes
+        if: env.TEST_FAILED == 'true'
+        run: |
+          git config user.name "ai-bot"
+          git config user.email "ai-bot@users.noreply.github.com"
+
+          BRANCH="ai-fix/ci-${{ github.run_number }}"
+
+          git checkout -b $BRANCH || git checkout $BRANCH
+
+          git add .
+
+          git commit -m "AI self-heal CI fix" || echo "No changes to commit"
+
+          git push origin $BRANCH
