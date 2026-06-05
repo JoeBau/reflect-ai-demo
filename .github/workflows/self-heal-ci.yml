@@ -24,13 +24,34 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node
+      - name: Setup Node (pinned)
         uses: actions/setup-node@v4
         with:
           node-version: 24
+          check-latest: false
+          cache: npm
 
-      - name: Install dependencies
-        run: npm install
+      - name: Environment fingerprint
+        run: |
+          echo "Node: $(node -v)"
+          echo "NPM: $(npm -v)"
+          echo "OS: $(uname -a)"
+          echo "Runner: $RUNNER_OS"
+
+      - name: CI sanity check
+        run: |
+          if [ -z "$(node -v)" ]; then
+            echo "Node missing"
+            exit 1
+          fi
+
+          if [ ! -f package-lock.json ]; then
+            echo "Lockfile missing"
+            exit 1
+          fi
+
+      - name: Install dependencies (locked)
+        run: npm ci
 
       - name: Install Playwright
         run: npx playwright install --with-deps
@@ -42,11 +63,23 @@ jobs:
           npx playwright test
           EXIT_CODE=$?
 
+          echo "EXIT_CODE=$EXIT_CODE" >> $GITHUB_ENV
+
           if [ $EXIT_CODE -ne 0 ]; then
             echo "TEST_FAILED=true" >> $GITHUB_ENV
           fi
 
+          echo "TEST_FAILED=$TEST_FAILED"
           exit 0
+
+      - name: AI environment guard
+        run: |
+          echo "Validating AI runtime..."
+
+          test -f package-lock.json || exit 1
+          node -v || exit 1
+
+          echo "AI environment OK"
 
       - name: Run AI Self-Heal Agent
         if: env.TEST_FAILED == 'true'
@@ -62,7 +95,7 @@ jobs:
           git config user.name "ai-bot"
           git config user.email "ai-bot@users.noreply.github.com"
 
-          BRANCH="ai-fix/main"
+          BRANCH="ai-fix"
 
           echo "BRANCH_NAME=$BRANCH" >> $GITHUB_ENV
 
@@ -70,17 +103,19 @@ jobs:
 
           git add .
 
-          git commit -m "AI self-heal CI fix" || echo "No changes"
+          git diff --quiet && echo "No changes" && exit 0
+          git commit -m "AI self-heal CI fix"
 
           git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git $BRANCH
 
-      - name: Setup GitHub CLI auth
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+      - name: Verify GitHub CLI
+        run: gh --version
 
       - name: Create or Update Pull Request
         if: env.TEST_FAILED == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           BRANCH=$BRANCH_NAME
 
