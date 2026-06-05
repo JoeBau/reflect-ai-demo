@@ -37,7 +37,15 @@ jobs:
       - name: Run Playwright tests
         id: test
         run: |
-          npx playwright test || echo "TEST_FAILED=true" >> $GITHUB_ENV
+          set +e
+          npx playwright test
+          EXIT_CODE=$?
+
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "TEST_FAILED=true" >> $GITHUB_ENV
+          fi
+
+          exit 0
 
       - name: Run AI Self-Heal Agent
         if: env.TEST_FAILED == 'true'
