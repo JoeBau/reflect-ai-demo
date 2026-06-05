@@ -42,7 +42,12 @@ jobs:
 
           git fetch origin --prune
 
-          git checkout -B ai-fix
+          # HARD reset local branch state
+          git show-ref | grep ai-fix || true
+
+          # FORCE clean branch recreation (this is key)
+          git branch -D ai-fix 2>/dev/null || true
+          git checkout -b ai-fix
 
           git add .
 
