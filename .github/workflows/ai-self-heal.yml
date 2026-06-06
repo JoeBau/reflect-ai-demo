@@ -12,23 +12,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Harden git ref namespace (critical fix)
-        run: |
-          git config core.logallrefupdates false
-          git fetch origin --prune
-
-          # Flatten any ai-fix namespace refs
-          git for-each-ref --format="%(refname)" | grep "refs/heads/ai-fix/" || true
-
-          # Force delete ANY hierarchical refs
-          rm -rf .git/refs/heads/ai-fix || true
-
       - name: Checkout repository (clean)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           clean: true
-          ref: main
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -54,14 +42,9 @@ jobs:
 
           git fetch origin --prune
 
-          # CRITICAL: reinitialize ref safely
-          rm -rf .git/refs/heads/ai-fix || true
-
           git checkout -B ai-fix
 
           git add .
-
-          git diff --cached --quiet && echo "No changes" && exit 0
 
           git commit -m "AI self-heal fix" || exit 0
 
