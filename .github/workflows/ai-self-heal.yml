@@ -42,10 +42,10 @@ jobs:
 
           git fetch origin --prune
 
-          git checkout -B ai-fix
+          git checkout -B ai-fix-ci
 
           git add .
 
           git commit -m "AI self-heal fix" || exit 0
 
-          git push origin ai-fix
+          git push origin ai-fix-ci
