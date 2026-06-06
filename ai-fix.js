@@ -7,6 +7,7 @@ const API_KEY = process.env.FUELIX_API_KEY;
 
 async function run() {
   let rawOutput = "";
+  let errorContext = "";
 
   // 1. Run Playwright safely
   try {
@@ -14,6 +15,23 @@ async function run() {
   } catch (err) {
     rawOutput = err.stdout?.toString() || err.message;
   }
+
+    try {
+    const contextPathMatch = rawOutput.match(
+        /Error Context:\s*(.+error-context\.md)/i
+    );
+
+    if (contextPathMatch) {
+        const contextPath = contextPathMatch[1].trim();
+
+        errorContext = fs.readFileSync(contextPath, "utf-8");
+
+        console.log("\n=== ERROR CONTEXT ===\n");
+        console.log(errorContext);
+    }
+    } catch (e) {
+    console.log("No error context found");
+    }  
 
   console.log("\n=== RAW PLAYWRIGHT OUTPUT ===\n");
   console.log(rawOutput);
@@ -50,6 +68,9 @@ Rules:
 
 Failure log:
 ${safeOutput}
+
+Error Context:
+${errorContext}
 `
       }
     ]
@@ -117,34 +138,8 @@ ${safeOutput}
 
   fs.writeFileSync(filePath, fileContent);
   console.log("\n✔ File updated safely");
+  console.log("\n🤖 AI fix generated successfully");
 
-  // 9. Git automation (safe branch handling)
-  const branchName = "ai-fix/run-1";
-
-  try {
-    try {
-      execSync(`git rev-parse --verify ${branchName}`, { stdio: "ignore" });
-      execSync(`git checkout ${branchName}`, { stdio: "inherit" });
-    } catch {
-      execSync(`git checkout -b ${branchName}`, { stdio: "inherit" });
-    }
-
-    execSync("git add .", { stdio: "inherit" });
-    execSync('git commit -m "AI self-heal fix (v3)"', {
-      stdio: "inherit",
-    });
-
-    execSync(`git push -u origin ${branchName}`, { stdio: "inherit" });
-
-    console.log("\n🚀 AI self-healing completed");
-    console.log(
-      "👉 PR:",
-      `https://github.com/JoeBau/reflect-ai-demo/pull/new/${branchName}`
-    );
-
-  } catch (e) {
-    console.log("\n⚠ Git error:", e.message);
-  }
 }
 
 run();
