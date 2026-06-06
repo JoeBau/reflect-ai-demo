@@ -48,4 +48,4 @@ jobs:
 
           git commit -m "AI self-heal fix" || exit 0
 
-          git push origin ai-fix-ci
+          git push -f origin ai-fix-ci
